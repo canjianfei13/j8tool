@@ -1,0 +1,38 @@
+name: Monthly Activity Keepalive
+
+on:
+  schedule:
+    # 每月1号 UTC 00:00 执行（对应北京时间当天 08:00）
+    - cron: '0 0 1 * *'
+  # 支持手动触发，方便测试
+  workflow_dispatch:
+
+permissions:
+  # 授予工作流写入仓库代码的权限（新版 GitHub 默认只读）
+  contents: write
+
+jobs:
+  auto-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库代码
+        uses: actions/checkout@v4
+
+      - name: 配置 Git 身份
+        run: |
+          # 仅维持仓库活跃，可直接用官方 bot 账号
+          # 若要计入个人贡献图，请替换为你自己的 GitHub 用户名和绑定邮箱
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: 更新活跃度标记文件
+        run: |
+          # 向 activity.log 追加一行时间记录，无业务侵入
+          echo "Monthly heartbeat: $(date '+%Y-%m-%d %H:%M:%S UTC')" >> activity.log
+
+      - name: 提交并推送更改
+        run: |
+          git add activity.log
+          git commit -m "chore: monthly activity heartbeat"
+          # 若你的默认分支是 master，请将下面的 main 替换为 master
+          git push origin main
